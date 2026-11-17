@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1e9">
+  <meta name="description" content="Turn numbers into Cistercian symbols. Explore the four corners, go beyond 9,999, and compare calculations in both number systems.">
+  <title>Cistercian Studio — a different way to see numbers</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="widget.css">
+  <script src="numerals.js" defer></script>
+  <script src="clock.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to converter</a>
+  <header class="site-header">
+    <a href="#" class="brand" aria-label="Cistercian Studio home"><svg viewBox="0 0 32 42" aria-hidden="true"><path d="M16 4V38M16 4H28V15H16M16 38H4V27H16"/></svg><span>Cistercian<span class="brand-small">STUDIO</span></span></a>
+    <a class="header-link" href="#guide">A guide to the symbols <span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="main">
+    <section class="intro">
+      <div class="eyebrow"><span></span> A DIFFERENT WAY TO SEE NUMBERS</div>
+      <h1>Many digits.<br class="mobile-break"> <em>One symbol.</em></h1>
+      <p>Turn a number into a Cistercian mark. Explore its shape,<br class="desktop-break"> then do the maths in two number systems.</p>
+    </section>
+    <div class="workspace">
+      <div class="workspace-toolbar">
+        <div class="tabs" role="tablist" aria-label="Number tools">
+          <button id="convert-tab" class="tab active" role="tab" aria-selected="true" aria-controls="convert-panel" tabindex="0"><span aria-hidden="true">↔</span> Convert</button>
+          <button id="calculate-tab" class="tab" role="tab" aria-selected="false" aria-controls="calculate-panel" tabindex="-1"><span aria-hidden="true">±</span> Calculate</button>
+          <button id="clock-tab" class="tab" role="tab" aria-selected="false" aria-controls="clock-panel" tabindex="-1"><span aria-hidden="true">◷</span> Clock</button>
+        </div>
+        <label class="colour-toggle"><input id="colour-mode" type="checkbox"><span class="switch" aria-hidden="true"></span>Colour the places</label>
+      </div>
+      <section id="convert-panel" role="tabpanel" aria-labelledby="convert-tab">
+        <div class="converter-grid">
+          <div class="input-side">
+            <div class="section-index">01 / YOUR NUMBER</div>
+            <label class="input-label" for="number-input">Start with a number.</label>
+            <p class="muted input-description">Watch its Cistercian form take shape as you type.</p>
+            <div class="number-field"><input id="number-input" type="text" inputmode="text" value="1993" autocomplete="off" spellcheck="false" aria-describedby="number-help number-error"><span class="field-arrow" aria-hidden="true">↗</span></div>
+            <p id="number-help" class="field-help">Whole numbers, including negatives · up to 32 digits</p>
+            <p id="number-error" class="error" role="alert" hidden></p>
+            <div class="examples"><span>TRY ONE</span><button data-example="4723">4,723</button><button data-example="9999">9,999</button><button data-example="12345678">12,345,678 <span aria-hidden="true">↗</span></button></div>
+            <div class="input-note"><span class="note-star" aria-hidden="true">✳</span><p>Four places, one stem.<br><span>Each corner tells part of the story.</span></p></div>
+          </div>
+          <div class="output-side">
+            <div class="output-top"><span class="section-index">02 / CISTERCIAN</span><span class="status-tag" id="notation-tag">ONE SYMBOL</span></div>
+            <div id="convert-output" class="main-glyph-output" aria-live="polite" aria-atomic="true"></div>
+            <div class="output-bottom"><span id="converted-value" class="serif"></span><button id="download-svg" class="text-button" aria-label="Download the Cistercian number as an SVG image">Save SVG <span aria-hidden="true">↓</span></button></div>
+          </div>
+        </div>
+        <div class="breakdown-section"><div class="breakdown-heading"><span class="section-index">READ THE FOUR CORNERS</span><span id="breakdown-hint">Together, they make 1,993.</span></div><div id="breakdown" class="breakdown-grid"></div></div>
+      </section>
+      <section id="calculate-panel" role="tabpanel" aria-labelledby="calculate-tab" hidden>
+        <div class="calculator-head"><div class="section-index">THE SAME MATHS, A DIFFERENT SCRIPT</div><h2>See both sides of the equation.</h2><p class="muted">Enter two whole numbers. Choose an operation. Compare every part.</p></div>
+        <div class="calc-controls">
+          <div class="operand"><label for="operand-a">First number</label><input id="operand-a" type="text" inputmode="text" value="1993" autocomplete="off" spellcheck="false"><div id="operand-a-glyph" class="operand-glyph"></div></div>
+          <fieldset class="operation-select"><legend>Operation</legend><div><button data-operation="+" aria-label="Add" aria-pressed="true" class="selected">+</button><button data-operation="-" aria-label="Subtract" aria-pressed="false">−</button><button data-operation="*" aria-label="Multiply" aria-pressed="false">×</button><button data-operation="/" aria-label="Divide" aria-pressed="false">÷</button></div></fieldset>
+          <div class="operand"><label for="operand-b">Second number</label><input id="operand-b" type="text" inputmode="text" value="30" autocomplete="off" spellcheck="false"><div id="operand-b-glyph" class="operand-glyph"></div></div>
+        </div>
+        <p id="calc-error" class="error calc-error" role="alert" hidden></p>
+        <div id="calc-result" class="calc-result" aria-live="polite" aria-atomic="true"><div class="decimal-result"><span class="section-index">DECIMAL NOTATION</span><p id="decimal-equation"></p><div id="decimal-answer"></div><p id="decimal-detail" class="muted"></p><button class="text-button" id="use-result">Explore this result <span aria-hidden="true">↗</span></button></div><div class="cistercian-result"><span class="section-index">CISTERCIAN NOTATION</span><div id="result-glyph"></div></div></div>
+        <p class="calculator-footnote">Negative answers keep a minus sign. Non-whole answers use an exact fraction in both systems; decimal previews show up to 12 places.</p>
+      </section>
+      <section id="clock-panel" role="tabpanel" aria-labelledby="clock-tab" hidden>
+        <div class="clock-heading"><div><div class="section-index">A DIFFERENT WAY TO TELL THE TIME</div><h2>Every second, a new symbol.</h2><p class="muted">The time and date, written in both number systems.</p></div><div class="timezone-control"><label for="clock-zone">Time zone</label><select id="clock-zone"><option value="Europe/London">London</option><option value="device">This device</option><option value="UTC">UTC</option></select></div></div>
+        <div class="clock-live"><span class="live-dot" aria-hidden="true"></span><span id="clock-zone-label">LIVE · EUROPE/LONDON</span><span class="clock-format">24-HOUR CLOCK</span></div>
+        <div id="live-time" class="clock-grid time-grid" role="timer" aria-live="off" aria-label="Current time">
+          <div class="clock-unit"><span class="section-index">HOURS</span><span id="clock-hours-number" class="clock-number">—</span><div id="clock-hours-glyph" class="clock-symbol"></div></div>
+          <div class="clock-unit"><span class="section-index">MINUTES</span><span id="clock-minutes-number" class="clock-number">—</span><div id="clock-minutes-glyph" class="clock-symbol"></div></div>
+          <div class="clock-unit seconds-unit"><span class="section-index">SECONDS</span><span id="clock-seconds-number" class="clock-number">—</span><div id="clock-seconds-glyph" class="clock-symbol"></div></div>
+        </div>
+        <div class="clock-date-heading"><span class="section-index">TODAY'S DATE</span><span id="clock-date-label"></span></div>
+        <div class="clock-grid date-grid">
+          <div class="clock-unit"><span class="section-index">DAY</span><span id="clock-day-number" class="clock-number">—</span><div id="clock-day-glyph" class="clock-symbol"></div></div>
+          <div class="clock-unit"><span class="section-index">MONTH</span><span id="clock-month-number" class="clock-number">—</span><div id="clock-month-glyph" class="clock-symbol"></div></div>
+          <div class="clock-unit"><span class="section-index">YEAR</span><span id="clock-year-number" class="clock-number">—</span><div id="clock-year-glyph" class="clock-symbol"></div></div>
+        </div>
+        <p class="calculator-footnote">Time follows your device's clock in the selected time zone. Each time or date component has its own symbol; an empty stem represents zero.</p>
+      </section>
+    </div>
+    <section class="desktop-download" aria-labelledby="desktop-title">
+      <div class="widget-preview"><img src="widget-phosphor.png" width="420" height="178" alt="Green phosphor Cistercian symbols on a black desktop clock"><span>PHOSPHOR · HOURS / MINUTES / SECONDS</span></div>
+      <div class="download-copy"><div class="eyebrow">TAKE IT TO YOUR DESKTOP</div><h2 id="desktop-title">An old-school clock.<br><em>An even older script.</em></h2><p>A tiny, draggable Windows widget. Just the symbols, glowing green on black. Right-click to choose Phosphor, Amber, Ice or Paper, change the size, or add the date.</p><div class="download-actions"><a class="download-button" href="downloads/CistercianClock-Windows.zip" download>Download for Windows <span aria-hidden="true">↓</span></a><a class="source-link" href="https://github.com/joeleek1/cistercian-studio" target="_blank" rel="noopener noreferrer">View source ↗</a></div><small>Windows 10 & 11 · Portable ZIP · Extract and open CistercianClock.exe</small></div>
+    </section>
+    <section id="guide" class="guide">
+      <div class="guide-title"><div class="eyebrow">A LITTLE ORIENTATION</div><h2>A number in<br><em>four corners.</em></h2><p>Read the marks around a central stem.<br>Add the four place values together.</p></div>
+      <div class="quadrant-card"><span class="quadrant-label tens">Tens <small>top left</small></span><span class="quadrant-label units">Units <small>top right</small></span><svg viewBox="0 0 160 150" aria-hidden="true"><path class="diagram-guide" d="M10 75H150M80 0V150"/><path class="diagram-stem" d="M80 15V135"/><path stroke="#377b83" d="M80 15H35"/><path stroke="#b7653e" d="M80 15H125"/><path stroke="#8d7243" d="M80 135H35"/><path stroke="#6c719a" d="M80 135H125"/></svg><span class="quadrant-label thousands">Thousands <small>bottom left</small></span><span class="quadrant-label hundreds">Hundreds <small>bottom right</small></span></div>
+      <div class="extension-card"><span class="small-pill">OUR EXTENSION</span><h3>And beyond 9,999?</h3><p>Add another symbol to the left, just as you add another digit. Each symbol holds a group of four digits.</p><div class="extension-equation"><span>12,345,678</span><span aria-hidden="true">→</span><span><b>1234</b><i>│</i><b>5678</b></span></div><p class="tiny">Read left to right: 1,234 × 10,000 + 5,678. More symbols let you go higher still.</p></div>
+    </section>
+    <details class="reference"><summary><span><span class="reference-icon" aria-hidden="true">▦</span> The complete symbol key <small>1–9, in every place</small></span><span class="details-arrow" aria-hidden="true">+</span></summary><div class="reference-content"><p class="muted">The same nine shapes are mirrored into each corner, following your reference chart.</p><div class="table-scroll"><table id="reference-table"><caption class="sr-only">Cistercian symbols for units, tens, hundreds and thousands</caption></table></div></div></details>
+    <footer><p><strong>A note on notation.</strong> The four-corner symbols follow the supplied chart. Grouping symbols above 9,999, an empty stem for zero, minus signs and fraction bars are conventions used in this app.</p><span>CISTERCIAN STUDIO <span aria-hidden="true">✳</span></span></footer>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

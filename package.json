@@ -1,0 +1,1 @@
+{"name":"cistercian-studio","private":true,"version":"1.0.0","description":"A Cistercian numeral converter, exact calculator and live clock","scripts":{"test":"node --test","start":"node preview.cjs"}}
