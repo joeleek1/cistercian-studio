@@ -13,7 +13,10 @@ namespace CistercianStudio
     public sealed class ClockSettings
     {
         public string Theme = "Phosphor", Zone = "Local";
+        public string DateStyle = "Symbols", DateFormat = "DMY";
         public int Size = 1, Opacity = 100, X = int.MinValue, Y = int.MinValue;
+        public int Width = 0, Height = 0;
+        public bool TransparentBackground = false;
         public bool Date = false, Labels = false, Seconds = true, Glow = true, Scanlines = true, OnTop = true;
         public static string FilePath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CistercianClock.settings"); } }
         public static ClockSettings Load(string path)
@@ -31,6 +34,11 @@ namespace CistercianStudio
                     {
                         case "Theme": if (Themes.All.Any(t => t.Name == pair[1])) settings.Theme = pair[1]; break;
                         case "Zone": if (new[] { "Local", "London", "UTC" }.Contains(pair[1])) settings.Zone = pair[1]; break;
+                        case "DateStyle": if (new[] { "Symbols", "Text", "Both" }.Contains(pair[1])) settings.DateStyle = pair[1]; break;
+                        case "DateFormat": if (new[] { "DMY", "MDY", "YMD", "Long" }.Contains(pair[1])) settings.DateFormat = pair[1]; break;
+                        case "Width": if (int.TryParse(pair[1], out number)) settings.Width = Math.Max(240, Math.Min(1600, number)); break;
+                        case "Height": if (int.TryParse(pair[1], out number)) settings.Height = Math.Max(150, Math.Min(1200, number)); break;
+                        case "TransparentBackground": if (bool.TryParse(pair[1], out flag)) settings.TransparentBackground = flag; break;
                         case "Size": if (int.TryParse(pair[1], out number)) settings.Size = Math.Max(0, Math.Min(2, number)); break;
                         case "Opacity": if (int.TryParse(pair[1], out number)) settings.Opacity = Math.Max(40, Math.Min(100, number)); break;
                         case "X": if (int.TryParse(pair[1], out number)) settings.X = number; break;
@@ -51,7 +59,8 @@ namespace CistercianStudio
         public void Save(string path)
         {
             string text = string.Join(Environment.NewLine, new[] { "Theme=" + Theme, "Zone=" + Zone, "Size=" + Size, "Opacity=" + Opacity,
-                "X=" + X, "Y=" + Y, "Date=" + Date, "Labels=" + Labels, "Seconds=" + Seconds, "Glow=" + Glow, "Scanlines=" + Scanlines, "OnTop=" + OnTop });
+                "X=" + X, "Y=" + Y, "Date=" + Date, "Labels=" + Labels, "Seconds=" + Seconds, "Glow=" + Glow, "Scanlines=" + Scanlines, "OnTop=" + OnTop,
+                "Width=" + Width, "Height=" + Height, "DateStyle=" + DateStyle, "DateFormat=" + DateFormat, "TransparentBackground=" + TransparentBackground });
             // Portable settings stay beside the executable; a read-only folder simply disables persistence.
             try { File.WriteAllText(path, text, Encoding.UTF8); }
             catch (IOException) { }
@@ -130,183 +139,6 @@ namespace CistercianStudio
         }
     }
 
-    public sealed class ClockWindow : Form
-    {
-        private readonly ClockSettings settings;
-        private readonly bool preview;
-        private readonly Timer timer = new Timer();
-        private readonly ContextMenuStrip menu = new ContextMenuStrip();
-        private readonly NotifyIcon tray = new NotifyIcon();
-        private Point dragAnchor;
-        private bool dragging;
-        private long lastSecond = -1;
-        private DateTime currentTime;
-        public ClockWindow(ClockSettings initial, bool previewMode = false)
-        {
-            settings = initial; preview = previewMode;
-            Text = "Cistercian Clock";
-            AccessibleName = "Cistercian desktop clock";
-            AccessibleDescription = "Hours, minutes and seconds in Cistercian numerals. Right-click or press S for settings. F1 for help.";
-            FormBorderStyle = FormBorderStyle.None;
-            StartPosition = FormStartPosition.Manual;
-            AutoScaleMode = AutoScaleMode.None;
-            DoubleBuffered = true; KeyPreview = true;
-            SetStyle(ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
-            Icon = MakeIcon();
-            ContextMenuStrip = menu;
-            menu.Opening += delegate { BuildMenu(); };
-            tray.Icon = Icon; tray.Text = "Cistercian Clock - right-click for settings"; tray.ContextMenuStrip = menu; tray.Visible = !preview;
-            tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
-            ApplySettings(false);
-            var area = Screen.PrimaryScreen.WorkingArea;
-            Location = new Point(area.Right - Width - 28, area.Top + 28);
-            if (settings.X != int.MinValue && Screen.AllScreens.Any(screen => screen.WorkingArea.IntersectsWith(new Rectangle(settings.X, settings.Y, Width, Height)))) Location = new Point(settings.X, settings.Y);
-            timer.Interval = 100;
-            timer.Tick += delegate { TickClock(); };
-            TickClock(); timer.Start();
-            MouseDown += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { dragAnchor = e.Location; dragging = true; Capture = true; } };
-            MouseMove += delegate(object sender, MouseEventArgs e) { if (dragging) Location = new Point(Location.X + e.X - dragAnchor.X, Location.Y + e.Y - dragAnchor.Y); };
-            MouseUp += delegate { if (dragging) { dragging = false; Capture = false; Save(); } };
-            MouseDoubleClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) menu.Show(this, e.Location); };
-        }
-        private static Icon MakeIcon()
-        {
-            using (var bitmap = new Bitmap(32, 32))
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.Clear(Color.FromArgb(2,6,4));
-                graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                Numerals.Draw(graphics, 2026, new RectangleF(6, 3, 20, 26), Color.FromArgb(104,255,153), false);
-                IntPtr handle = bitmap.GetHicon();
-                try { using (var borrowed = Icon.FromHandle(handle)) return (Icon)borrowed.Clone(); }
-                finally { DestroyIcon(handle); }
-            }
-        }
-        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr handle);
-        private void TickClock()
-        {
-            var now = DateTime.UtcNow;
-            long second = now.Ticks / TimeSpan.TicksPerSecond;
-            if (second == lastSecond) return;
-            lastSecond = second;
-            currentTime = Numerals.TimeAt(now, settings.Zone);
-            AccessibleName = "Cistercian Clock " + currentTime.ToString("HH:mm:ss, dd MMMM yyyy", CultureInfo.InvariantCulture) + ", " + settings.Zone;
-            Invalidate();
-        }
-        private void Save()
-        {
-            if (preview) return;
-            settings.X = Location.X; settings.Y = Location.Y; settings.Save(ClockSettings.FilePath);
-        }
-        private void ApplySettings(bool save = true)
-        {
-            float scale = new[] { .75f, 1f, 1.4f }[settings.Size];
-            int width = settings.Seconds ? 420 : 300;
-            int height = 178 + (settings.Labels ? 35 : 0) + (settings.Date ? 125 + (settings.Labels ? 25 : 0) : 0);
-            ClientSize = new Size((int)(width * scale), (int)(height * scale));
-            TopMost = settings.OnTop;
-            Opacity = settings.Opacity / 100.0;
-            BackColor = Themes.All.First(t => t.Name == settings.Theme).Background;
-            lastSecond = -1; TickClock();
-            // Keep the widget reachable after a size change or monitor removal.
-            var area = Screen.FromControl(this).WorkingArea;
-            Location = new Point(Math.Max(area.Left, Math.Min(Location.X, area.Right - Width)), Math.Max(area.Top, Math.Min(Location.Y, area.Bottom - Height)));
-            if (save) Save();
-            Invalidate();
-        }
-        private ToolStripMenuItem AddChoice(ToolStripMenuItem parent, string label, bool selected, Action action)
-        {
-            var item = new ToolStripMenuItem(label) { Checked = selected };
-            item.Click += delegate { action(); ApplySettings(); };
-            parent.DropDownItems.Add(item); return item;
-        }
-        private void AddToggle(string label, bool selected, Action action)
-        {
-            var item = new ToolStripMenuItem(label) { Checked = selected };
-            item.Click += delegate { action(); ApplySettings(); };
-            menu.Items.Add(item);
-        }
-        private void BuildMenu()
-        {
-            // Dispose prior items, including submenu handles, before rebuilding.
-            foreach (ToolStripItem old in menu.Items.Cast<ToolStripItem>().ToArray()) old.Dispose();
-            menu.Items.Clear();
-            var heading = new ToolStripMenuItem("Cistercian Clock") { Enabled = false };
-            menu.Items.Add(heading); menu.Items.Add(new ToolStripSeparator());
-            var theme = new ToolStripMenuItem("Theme"); menu.Items.Add(theme);
-            foreach (var candidate in Themes.All) { var chosen = candidate; AddChoice(theme, candidate.Name + (candidate.Name == "Phosphor" ? " - green on black" : ""), settings.Theme == candidate.Name, () => settings.Theme = chosen.Name); }
-            var size = new ToolStripMenuItem("Size"); menu.Items.Add(size);
-            for (int i = 0; i < 3; i++) { int index = i; AddChoice(size, new[] { "Small", "Medium", "Large" }[i], settings.Size == i, () => settings.Size = index); }
-            var opacity = new ToolStripMenuItem("Opacity"); menu.Items.Add(opacity);
-            foreach (int level in new[] { 100, 85, 70, 55, 40 }) { int chosen = level; AddChoice(opacity, level + "%", settings.Opacity == level, () => settings.Opacity = chosen); }
-            var zone = new ToolStripMenuItem("Time zone"); menu.Items.Add(zone);
-            foreach (string value in new[] { "Local", "London", "UTC" }) { string chosen = value; AddChoice(zone, value == "Local" ? "This device" : value, settings.Zone == value, () => settings.Zone = chosen); }
-            menu.Items.Add(new ToolStripSeparator());
-            AddToggle("Show seconds", settings.Seconds, () => settings.Seconds = !settings.Seconds);
-            AddToggle("Show date (day / month / year)", settings.Date, () => settings.Date = !settings.Date);
-            AddToggle("Show decimal labels", settings.Labels, () => settings.Labels = !settings.Labels);
-            AddToggle("Phosphor glow", settings.Glow, () => settings.Glow = !settings.Glow);
-            AddToggle("CRT scanlines", settings.Scanlines, () => settings.Scanlines = !settings.Scanlines);
-            AddToggle("Always on top", settings.OnTop, () => settings.OnTop = !settings.OnTop);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Show clock", null, delegate { Show(); Activate(); });
-            menu.Items.Add("Hide to tray (Esc)", null, delegate { Hide(); });
-            menu.Items.Add("How to use (F1)", null, delegate { ShowHelp(); });
-            menu.Items.Add("Quit (Ctrl+Q)", null, delegate { Close(); });
-        }
-        private void ShowHelp()
-        {
-            MessageBox.Show(this, "Read left to right: hours, minutes, seconds (24-hour time).\n\nIf the date is enabled, the second row is day, month, year. An empty stem means zero.\n\nDrag anywhere to move. Right-click, double-click or press S for settings.\n\nThemes: Phosphor green, Amber, Ice and Paper. You can change the size, opacity, date, decimal labels, glow, scanlines and always-on-top setting.\n\nEsc hides to the tray. Double-click the tray icon to restore. Ctrl+Q quits.\n\nSettings are saved beside the app. No network connection or installation is required.", "Cistercian Clock", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.KeyCode == Keys.S || e.KeyCode == Keys.Apps) { menu.Show(this, new Point(20, 20)); e.Handled = true; }
-            else if (e.KeyCode == Keys.F1) { ShowHelp(); e.Handled = true; }
-            else if (e.KeyCode == Keys.Escape) { Hide(); e.Handled = true; }
-            else if (e.Control && e.KeyCode == Keys.Q) { Close(); e.Handled = true; }
-        }
-        public void RenderClock(Graphics graphics, DateTime moment)
-        {
-            var theme = Themes.All.First(t => t.Name == settings.Theme);
-            graphics.Clear(theme.Background);
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            float scale = new[] { .75f, 1f, 1.4f }[settings.Size];
-            var state = graphics.Save();
-            graphics.ScaleTransform(scale, scale);
-            float logicalWidth = ClientSize.Width / scale;
-            DrawRow(graphics, settings.Seconds ? new[] { moment.Hour, moment.Minute, moment.Second } : new[] { moment.Hour, moment.Minute }, new[] { "HOURS", "MINUTES", "SECONDS" }, 22, 134, logicalWidth, theme);
-            if (settings.Date) DrawRow(graphics, new[] { moment.Day, moment.Month, moment.Year }, new[] { "DAY", "MONTH", "YEAR" }, 188 + (settings.Labels ? 35 : 0), 90, logicalWidth, theme);
-            graphics.Restore(state);
-            if (settings.Scanlines && !theme.Light)
-            {
-                using (var scan = new Pen(Color.FromArgb(20, 0, 0, 0)))
-                    for (int y = 1; y < Height; y += 3) graphics.DrawLine(scan, 0, y, Width, y);
-            }
-            using (var border = new Pen(Color.FromArgb(theme.Light ? 35 : 25, theme.Ink))) graphics.DrawRectangle(border, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
-        }
-        private void DrawRow(Graphics graphics, int[] values, string[] names, float y, float height, float width, ClockTheme theme)
-        {
-            float cell = (width - 32) / values.Length;
-            for (int i = 0; i < values.Length; i++)
-            {
-                float glyphWidth = height / 1.4f;
-                float x = 16 + cell * i + (cell - glyphWidth) / 2;
-                Numerals.Draw(graphics, values[i], new RectangleF(x, y, glyphWidth, height), theme.Ink, settings.Glow && !theme.Light);
-                if (settings.Labels)
-                {
-                    using (var font = new Font("Consolas", 8.5f))
-                    using (var brush = new SolidBrush(Color.FromArgb(theme.Light ? 180 : 145, theme.Ink)))
-                    using (var format = new StringFormat { Alignment = StringAlignment.Center })
-                        graphics.DrawString(values[i].ToString(i == 2 && names[2] == "YEAR" ? "0000" : "00") + "  " + names[i], font, brush, new RectangleF(16 + cell * i, y + height + 8, cell, 22), format);
-                }
-            }
-        }
-        protected override void OnPaint(PaintEventArgs e) { RenderClock(e.Graphics, currentTime); }
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        { Save(); timer.Stop(); timer.Dispose(); tray.Visible = false; tray.Dispose(); menu.Dispose(); Icon.Dispose(); base.OnFormClosed(e); }
-    }
-
     public static class Program
     {
         [STAThread]
@@ -315,7 +147,7 @@ namespace CistercianStudio
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
             if (args.Length > 0 && args[0] == "--self-test")
             {
-                try { SelfTest(); if (args.Length > 1) File.WriteAllText(args[1], "PASS: 10,000 unique numeral geometries, reference fixtures, time-zone transitions, and settings round trip."); return 0; }
+                try { SelfTest(); WidgetTests.Run(); if (args.Length > 1) File.WriteAllText(args[1], "PASS: numeral geometry, time zones, settings migration, date formats, resize layouts and cog bounds. Version 1.1.0."); return 0; }
                 catch (Exception error) { if (args.Length > 1) File.WriteAllText(args[1], "FAIL: " + error.Message); return 1; }
             }
             if (args.Length > 1 && args[0] == "--render-preview")
@@ -323,6 +155,10 @@ namespace CistercianStudio
                 var settings = new ClockSettings();
                 if (args.Length > 2) settings.Theme = args[2];
                 settings.Date = args.Contains("--date"); settings.Labels = args.Contains("--labels");
+                if (args.Contains("--text-date")) settings.DateStyle = "Both";
+                if (args.Contains("--long-date")) settings.DateFormat = "Long";
+                if (args.Contains("--wide")) { settings.Width = 680; settings.Height = 390; }
+                if (args.Contains("--compact")) { settings.Width = 260; settings.Height = 240; }
                 using (var window = new ClockWindow(settings, true))
                 using (var bitmap = new Bitmap(window.ClientSize.Width, window.ClientSize.Height))
                 using (var graphics = Graphics.FromImage(bitmap))
