@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
+  "zip_sha256": "f054c5ae9bc8fe4d90f615412d9399e0b63135f4c96d702812c05d6f9d300c08",
+  "source": "https://github.com/joeleek1/cistercian-studio/tree/main/desktop",
+  "version": "1.2.0",
   "authenticode_status": "NotSigned",
-  "zip_sha256": "e1d121aefc489a548d4f33ffac99abe557b352f0b751b13255f2a9f1677ddf02",
-  "executable_sha256": "bfff0c346735d5dc27e2a55e85f64010cd76c89929b84414a4f6d5101881b298",
-  "filename": "CistercianClock-v1.1.0-Windows.zip",
-  "source": "https://github.com/joeleek1/cistercian-studio/tree/main/desktop"
+  "executable_sha256": "a3489de98d33f17347baf3d593ad8af1b677bbe408bdb5a1260646aae7d9be75",
+  "filename": "CistercianClock-v1.2.0-Windows.zip"
 }

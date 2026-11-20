@@ -4,7 +4,7 @@ A Cistercian numeral converter, exact calculator, live clock, and retro Windows 
 
 ![Phosphor desktop clock: Cistercian symbols in green on black](dist/widget-phosphor.png)
 
-**[Download the Windows clock v1.1.0](https://github.com/joeleek1/cistercian-studio/raw/refs/heads/main/dist/downloads/CistercianClock-v1.1.0-Windows.zip)** · [SHA-256 checksum](dist/downloads/CistercianClock-v1.1.0-Windows.sha256) · [Web app](https://cistercian-studio-nov17.joeleek.chatgpt.site) (currently requires the owner's ChatGPT sign-in)
+**[Download the Windows clock v1.2.0](https://github.com/joeleek1/cistercian-studio/raw/refs/heads/main/dist/downloads/CistercianClock-v1.2.0-Windows.zip)** · [SHA-256 checksum](dist/downloads/CistercianClock-v1.2.0-Windows.sha256) · [Web app](https://cistercian-studio-nov17.joeleek.chatgpt.site) (currently requires the owner's ChatGPT sign-in)
 
 ## Desktop widget
 
@@ -24,8 +24,11 @@ Drag the clock to move it; drag an edge or corner to resize. Click the **green c
 | Time zone | This device, London, UTC |
 | Display | Seconds, date, decimal labels, glow, scanlines |
 | Window | Always on top, hide to system tray |
+| Windows | Start with Windows; create or repair a desktop shortcut |
 
-**F1** opens help. **Esc** hides the clock to the tray; double-click its tray icon to restore it. **Ctrl+Q** quits. Settings and position are stored in `CistercianClock.settings` beside the executable. The app does not add itself to startup, change system settings, or collect data.
+**F1** opens help. **Esc** hides the clock to the tray; double-click its tray icon to restore it. **Ctrl+Q** quits. Settings and position are stored in `CistercianClock.settings` beside the executable. The app does not collect data.
+
+In the cog's **Windows** section, enable **Start with Windows** to launch when you sign in after a reboot. It creates one shortcut in your account's Startup folder; turning the setting off removes that shortcut. Startup is opt-in and the checkbox reads the actual shortcut. Windows may delay startup or suppress it if you disable the entry in Windows startup settings. **Create desktop shortcut** adds the green clock icon to your desktop. Both shortcuts point to this copy of the EXE, so put it in a permanent folder first. Opening the clock again restores the existing window.
 
 To upgrade, close the old clock and replace its EXE with the new one. Keep your settings file: existing preferences are retained. The new size and date options save automatically. The long date's Cistercian row uses day/month/year.
 
@@ -40,6 +43,14 @@ To build the widget from source on Windows:
 ```
 
 This uses the built-in .NET Framework C# compiler, runs native self-tests, and creates a portable ZIP, a versioned ZIP, SHA-256 checksums and `release-info.json` in `dist/downloads`. Source is in `desktop/`.
+
+After building, optionally install a copy in your account's local Programs folder, add both shortcuts, and launch it:
+
+```powershell
+./desktop/install.ps1 -DesktopShortcut -StartWithWindows -Launch
+```
+
+The install script preserves existing preferences and requires no administrator access. Close the installed clock before upgrading. To remove it, turn off **Start with Windows**, quit, then remove its folder and desktop shortcut.
 
 ## Browser app
 
@@ -72,6 +83,6 @@ Browser arithmetic uses `BigInt`, including results larger than the input limit.
 npm test
 ```
 
-The tests cover the reference examples, all 10,000 distinct glyph geometries, large integers, arithmetic, fractions, zero groups, date rollover, leap days and British daylight-saving changes. The desktop build separately tests its geometry, time zones, preference migration, date formats, resize layouts, cog positioning and the settings controls.
+The tests cover the reference examples, all 10,000 distinct glyph geometries, large integers, arithmetic, fractions, zero groups, date rollover, leap days and British daylight-saving changes. The desktop build separately tests its geometry, time zones, preference migration, date formats, resize layouts, cog positioning, settings controls, startup toggling and failure recovery. Real Windows shortcut creation is tested in temporary folders without changing your desktop or startup entries.
 
 Both apps work offline. Clocks follow the device clock; no external time service is used.

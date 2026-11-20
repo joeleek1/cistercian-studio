@@ -147,7 +147,7 @@ namespace CistercianStudio
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
             if (args.Length > 0 && args[0] == "--self-test")
             {
-                try { SelfTest(); WidgetTests.Run(); if (args.Length > 1) File.WriteAllText(args[1], "PASS: numeral geometry, time zones, settings migration, date formats, resize layouts and cog bounds. Version 1.1.0."); return 0; }
+                try { SelfTest(); WidgetTests.Run(); if (args.Length > 1) File.WriteAllText(args[1], "PASS: numerals, time zones, settings, layouts, startup toggle, desktop shortcuts and error recovery. Version 1.2.0."); return 0; }
                 catch (Exception error) { if (args.Length > 1) File.WriteAllText(args[1], "FAIL: " + error.Message); return 1; }
             }
             if (args.Length > 1 && args[0] == "--render-preview")
@@ -165,8 +165,30 @@ namespace CistercianStudio
                 { window.RenderClock(graphics, new DateTime(2026,11,17,19,48,36)); bitmap.Save(args[1], System.Drawing.Imaging.ImageFormat.Png); }
                 return 0;
             }
+            if (args.Contains("--enable-startup") || args.Contains("--disable-startup") || args.Contains("--desktop-shortcut"))
+            {
+                int reportIndex=Array.IndexOf(args,"--integration-report");
+                string report=reportIndex>=0 && reportIndex+1<args.Length?args[reportIndex+1]:null;
+                try
+                {
+                    var integration=new WindowsIntegration();
+                    if(args.Contains("--enable-startup"))integration.SetStartup(true);
+                    if(args.Contains("--disable-startup"))integration.SetStartup(false);
+                    string desktop=args.Contains("--desktop-shortcut")?integration.CreateDesktopShortcut():"unchanged";
+                    if(report!=null)File.WriteAllText(report,"Startup="+integration.StartupEnabled+Environment.NewLine+"Desktop="+desktop);
+                    return 0;
+                }
+                catch(Exception error) { if(report!=null)File.WriteAllText(report,"ERROR: "+error.Message); return 1; }
+            }
             bool preview = args.Contains("--preview");
-            Application.Run(new ClockWindow(preview ? new ClockSettings() : ClockSettings.Load(ClockSettings.FilePath), preview));
+            if(preview) { Application.Run(new ClockWindow(new ClockSettings(),true)); return 0; }
+            bool firstInstance;
+            using(var instance=new System.Threading.Mutex(true,"Local\\CistercianStudio.Clock."+Environment.UserName,out firstInstance))
+            {
+                if(!firstInstance) { ClockInstance.ShowExisting(); return 0; }
+                try { Application.Run(new ClockWindow(ClockSettings.Load(ClockSettings.FilePath))); }
+                finally { instance.ReleaseMutex(); }
+            }
             return 0;
         }
         private static void Check(bool value, string message) { if (!value) throw new Exception(message); }

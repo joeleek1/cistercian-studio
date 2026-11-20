@@ -9,6 +9,13 @@ namespace CistercianStudio
 {
     public static class WidgetTests
     {
+        private sealed class TestIntegration : IWindowsIntegration
+        {
+            public bool Enabled, Fail; public int ShortcutCount;
+            public bool StartupEnabled { get { return Enabled; } }
+            public void SetStartup(bool value) { if(Fail)throw new IOException("Test write failure"); Enabled=value; }
+            public string CreateDesktopShortcut() { ShortcutCount++; return "test shortcut"; }
+        }
         private static void Check(bool value,string message){if(!value)throw new Exception(message);}
         private static IEnumerable<Control> Descendants(Control parent){foreach(Control child in parent.Controls){yield return child;foreach(var nested in Descendants(child))yield return nested;}}
         public static void Run()
@@ -48,9 +55,16 @@ namespace CistercianStudio
                 clock.ClientSize=new Size(670,340);
                 Check(clock.SettingsBounds==ClockLayout.Cog(clock.ClientSize),"Cog follows resize");
                 using(var bitmap=new Bitmap(670,340))using(var graphics=Graphics.FromImage(bitmap))clock.RenderClock(graphics,new DateTime(2026,11,17,19,48,36));
-                using(var dialog=new SettingsWindow(clock,viewSettings))
+                var integration=new TestIntegration();
+                using(var dialog=new SettingsWindow(clock,viewSettings,integration))
                 {
                     var controls=Descendants(dialog).ToArray();
+                    var startup=controls.OfType<CheckBox>().Single(c=>c.AccessibleName=="Start with Windows");
+                    startup.Checked=true; Check(integration.Enabled,"Startup checkbox enables startup");
+                    startup.Checked=false; Check(!integration.Enabled,"Startup checkbox disables startup");
+                    integration.Fail=true; startup.Checked=true;
+                    Check(!startup.Checked&&!integration.Enabled,"Failed startup write restores the checkbox");
+                    Check(controls.OfType<Label>().Any(c=>c.Text.Contains("Test write failure")),"Startup failure is visible");
                     controls.OfType<CheckBox>().Single(c=>c.AccessibleName=="Show date").Checked=true;
                     controls.OfType<ComboBox>().Single(c=>c.AccessibleName=="Date display").SelectedIndex=2;
                     controls.OfType<ComboBox>().Single(c=>c.AccessibleName=="Date format").SelectedIndex=2;
@@ -68,6 +82,31 @@ namespace CistercianStudio
                     Check(controls.OfType<NumericUpDown>().Single(c=>c.AccessibleName=="Height (pixels)").Minimum==210,"Settings respect the readable minimum size");
                 }
             }
+            TestShortcuts();
+        }
+        private static void TestShortcuts()
+        {
+            string root=Path.Combine(Path.GetTempPath(),"cistercian-shortcuts-"+Guid.NewGuid().ToString("N"));
+            string desktop=Path.Combine(root,"Desktop"),startup=Path.Combine(root,"Startup");
+            try
+            {
+                var integration=new WindowsIntegration(Application.ExecutablePath,desktop,startup);
+                Check(!integration.StartupEnabled,"Startup defaults off");
+                integration.SetStartup(true);
+                Check(integration.StartupEnabled,"Startup shortcut points at executable");
+                integration.SetStartup(true);
+                Check(Directory.GetFiles(startup,"*.lnk").Length==1,"Enabling startup is idempotent");
+                string shortcut=integration.CreateDesktopShortcut();
+                Check(WindowsIntegration.ReadTarget(shortcut)==Application.ExecutablePath,"Desktop shortcut target handles spaces");
+                integration.SetStartup(false);
+                Check(!integration.StartupEnabled&&File.Exists(shortcut),"Disabling startup preserves desktop shortcut");
+                integration.SetStartup(false);
+                string otherExe=Path.Combine(root,"Other.exe");File.Copy(Application.ExecutablePath,otherExe);
+                var other=new WindowsIntegration(otherExe,desktop,startup);other.SetStartup(true);
+                bool protectedOther=false;try{integration.SetStartup(false);}catch(IOException){protectedOther=true;}
+                Check(protectedOther&&File.Exists(integration.StartupPath),"Unrelated shortcut is not deleted");
+            }
+            finally { if(Directory.Exists(root))Directory.Delete(root,true); }
         }
     }
 }

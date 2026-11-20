@@ -5,6 +5,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("Cistercian Studio")]
 [assembly: AssemblyProduct("Cistercian Clock")]
 [assembly: AssemblyCopyright("Cistercian Studio contributors, 2026")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
 [assembly: ComVisible(false)]

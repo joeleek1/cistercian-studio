@@ -3,13 +3,13 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $compilerPath = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path -LiteralPath $compilerPath)) { $compilerPath = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe' }
 if (-not (Test-Path -LiteralPath $compilerPath)) { throw 'The .NET Framework C# compiler is required to build this Windows widget.' }
-$version = '1.1.0'
+$version = '1.2.0'
 $releaseDir = Join-Path $PSScriptRoot ('release\' + $version)
 $downloadDir = Join-Path $projectRoot 'dist\downloads'
 New-Item -ItemType Directory -Path $releaseDir, $downloadDir -Force | Out-Null
 $exePath = Join-Path $releaseDir 'CistercianClock.exe'
-$sourceFiles = @('CistercianClock.cs', 'ClockWindow.cs', 'SettingsWindow.cs', 'WidgetTests.cs', 'AssemblyInfo.cs') | ForEach-Object { Join-Path $PSScriptRoot $_ }
-& $compilerPath /nologo /target:winexe /optimize+ /platform:anycpu "/out:$exePath" "/win32manifest:$(Join-Path $PSScriptRoot 'app.manifest')" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll @sourceFiles
+$sourceFiles = @('CistercianClock.cs', 'ClockWindow.cs', 'SettingsWindow.cs', 'WindowsIntegration.cs', 'WidgetTests.cs', 'AssemblyInfo.cs') | ForEach-Object { Join-Path $PSScriptRoot $_ }
+& $compilerPath /nologo /target:winexe /optimize+ /platform:anycpu "/out:$exePath" "/win32manifest:$(Join-Path $PSScriptRoot 'app.manifest')" "/win32icon:$(Join-Path $PSScriptRoot 'clock.ico')" /reference:System.dll /reference:System.Core.dll /reference:Microsoft.CSharp.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll @sourceFiles
 if ($LASTEXITCODE -ne 0) { throw 'The widget build failed.' }
 $testReport = Join-Path $releaseDir 'test-report.txt'
 $testRun = Start-Process -FilePath $exePath -ArgumentList @('--self-test', ('"' + $testReport + '"')) -Wait -PassThru -WindowStyle Hidden

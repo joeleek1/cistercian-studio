@@ -19,9 +19,9 @@ Trusted Authenticode signing requires a publisher identity and certificate or si
 Compare its SHA-256 hash with the version-matched checksum in `dist/downloads`. `release-info.json` records the executable and archive hashes, version and Authenticode status. For example:
 
 ```powershell
-Get-FileHash -LiteralPath .\CistercianClock-v1.1.0-Windows.zip -Algorithm SHA256
+Get-FileHash -LiteralPath .\CistercianClock-v1.2.0-Windows.zip -Algorithm SHA256
 ```
 
-Source and the build script are public in `desktop`. The program draws the clock, reads local time, and saves its display preferences beside the executable. It does not include a network client, installer, startup-registration step, updater, or elevated execution request.
+Source and the build script are public in `desktop`. The program draws the clock, reads local time, and saves its display preferences beside the executable. It has no network client, updater, or elevated execution request. Version 1.2 adds explicit opt-in desktop and per-user Startup shortcuts using Windows Shell links. The startup setting removes its shortcut when turned off; it does not change security settings or override Windows startup restrictions. The optional `desktop/install.ps1` copies the app into the user's local Programs folder, preserving existing preferences. Its shortcut and launch actions require explicit command-line switches.
 
 To report a problem, include the app version, warning text, detection name if present, and SHA-256 hash in a repository issue. Do not include credentials or personal system logs.

@@ -179,6 +179,7 @@ namespace CistercianStudio
         protected override void OnResizeEnd(EventArgs e) { base.OnResizeEnd(e); Save(); }
         protected override void WndProc(ref Message message)
         {
+            if (message.Msg == ClockInstance.ShowMessage) { Show(); WindowState=FormWindowState.Normal; Activate(); return; }
             base.WndProc(ref message);
             if (message.Msg != 0x84 || (int)message.Result != 1) return; // WM_NCHITTEST / HTCLIENT
             long packed = message.LParam.ToInt64();
@@ -190,7 +191,7 @@ namespace CistercianStudio
         }
         private void ShowHelp()
         {
-            MessageBox.Show(this,"Read left to right: hours, minutes, seconds (24-hour time). An empty stem means zero.\n\nDrag any edge or corner to resize. Drag the clock to move it. With a transparent background, drag a symbol to move and use the lower-right grip to resize.\n\nClick the green cog, press S, or right-click for settings. Choose the date order and whether to show symbols, a standard date, or both. Transparency can affect the whole window or remove its background.\n\nEsc hides to the tray. Double-click the tray icon to restore. Ctrl+Q quits.\n\nSettings are saved beside the app. No network connection or administrator access is required.","Cistercian Clock 1.1",MessageBoxButtons.OK,MessageBoxIcon.Information);
+            MessageBox.Show(this,"Read left to right: hours, minutes, seconds (24-hour time). An empty stem means zero.\n\nDrag any edge or corner to resize. Drag the clock to move it. With a transparent background, drag a symbol to move and use the lower-right grip to resize.\n\nClick the green cog, press S, or right-click for settings. Choose the date order and whether to show symbols, a standard date, or both. Transparency can affect the whole window or remove its background.\n\nEsc hides to the tray. Double-click the tray icon to restore. Ctrl+Q quits.\n\nThe Windows section can create a desktop shortcut and start the clock when you sign in.\n\nSettings are saved beside the app. No network connection or administrator access is required.","Cistercian Clock 1.2",MessageBoxButtons.OK,MessageBoxIcon.Information);
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
